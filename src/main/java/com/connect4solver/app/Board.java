@@ -56,6 +56,6 @@ public class Board {
 
     public boolean checkWin() {
         // Check horizontal
-        BitSet b = this.getCurrentPlayerPos().and(this.getCurrentPlayerPos().)
+        return true;
     }
 }
