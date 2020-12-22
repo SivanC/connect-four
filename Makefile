@@ -11,7 +11,9 @@ TESTS=$(patsubst %.c,%,$(TEST_SRC))
 TARGET=build/libconnect4.a
 SO_TARGET=$(patsubst %.a,%.so,$(TARGET))
 
-all: $(TARGET) $(SO_TARGET) tests
+prog: $(TARGET) $(SO_TARGET)
+
+all: prog tests
 
 dev: CFLAGS=-g -Wall -Isrc -Wall -Wextra $(OPTFLAGS)
 dev: all

@@ -1,5 +1,6 @@
 .idea/
 tests/tests.log
+tests/libconnect4_tests
 build/
 lib/
 out/
