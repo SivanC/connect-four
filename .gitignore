@@ -1,0 +1,5 @@
+.idea/
+tests/tests.log
+build/
+lib/
+out/

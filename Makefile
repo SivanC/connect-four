@@ -23,7 +23,6 @@ $(TARGET): build $(OBJECTS)
 
 $(SO_TARGET): $(TARGET) $(OBJECTS)
 	$(CC) -shared -o $@ $(OBJECTS)
-#	^^ Don't know what this line does except get overwritten
 
 build:
 	@mkdir -p build
