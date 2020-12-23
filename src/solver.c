@@ -1,5 +1,6 @@
 #include "position.h"
 #include "solver.h"
+#include "sorter.h"
 
 #include "../lib/dbg.h"
 #include "../lib/bstrlib.h"
@@ -42,15 +43,10 @@ int gen_order() {
 int negamax(struct Position *pos, int alpha, int beta, int column_order[]) {
     int i = 0;
 
+    uint_fast64_t next = opponent_winning_positions(pos) & UINT64_C(0);
+
     // check for draw
     if (get_moves(pos) == BOARD_HEIGHT * BOARD_WIDTH ) return 0;
-
-    // check to see if next move wins
-    for (i = 0; i < BOARD_WIDTH; i++) {
-        if (can_play(i, pos->mask) && will_win(i, pos)) {
-            return (BOARD_HEIGHT * BOARD_WIDTH + 1 - get_moves(pos)) / 2;
-        }
-    }
 
     // otherwise, initiate best score as taking half the remaining moves in the
     // game (aka the rest of the current player's stones).
@@ -63,20 +59,59 @@ int negamax(struct Position *pos, int alpha, int beta, int column_order[]) {
         if (alpha >= beta) return beta;
     }
 
-    // get scores of all next moves and adjust score window
+    struct Sorter *sorter = Sorter_create();
     for (i = 0; i < BOARD_WIDTH; i++) {
-        if (can_play(column_order[i], pos->mask)) {
-            struct Position *next_pos = Position_create_from_pos(pos);
-            play(column_order[i], next_pos);
-
-            int score = -negamax(next_pos, -alpha, -beta, column_order);
-
-            // If the score we find is better than our upper bound we should return it
-            if (score >= beta) return score;
-            // Else if we find something better than our lower bound we should adjust our lower bound.
-            if (score > alpha) alpha = score;
+        if (uint_fast64_t move = next & column_mask(column_order[i])) {
+            add(sorter, move, score_move(move));
         }
     }
 
+    // get scores of all next moves and adjust score window
+    while(uint_fast64_t next = get_next(sorter->moves)) {
+        struct Position *next_pos = Position_create_from_pos(pos);
+        play(next);
+
+        int score = -negamax(next_pos, -alpha, -beta, column_order);
+
+        // If the score we find is better than our upper bound we should return it
+        if (score >= beta) return score;
+        // Else if we find something better than our lower bound we should adjust our lower bound.
+        if (score > alpha) alpha = score;
+    }
+
     return alpha;
+}
+
+int solve(struct Position *pos, int weak = 0) {
+
+    if (winning_positions(pos) != 0) {
+        return (BOARD_WIDTH * BOARD_HEIGHT + 1 - get_moves(pos)) / 2;
+    }
+
+    int min = -(BOARD_WIDTH * BOARD_HEIGHT - get_moves(pos)) / 2;
+    int max = (BOARD_WIDTH * BOARD_HEIGHT + 1 - get_moves(pos)) / 2;
+
+    if (weak) {
+        min = -1;
+        max = 1;
+    }
+
+    while (min < max) {
+        int mid = min + (max - min) / 2;
+        if (mid <= 0 && min/2 < mid) {
+            mid = min / 2;
+        } else if (mid >= 0 && max/2 > mid) {
+            mid = max / 2;
+        }
+
+        int r = negamax(pos, mid, mid + 1);
+
+        if (r <= mid) {
+            max = r;
+        } else {
+            min = r;
+        }
+    }
+
+    return min;
 }

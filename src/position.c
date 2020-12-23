@@ -7,6 +7,9 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+uint_fast64_t bottom = 0000001000000100000010000001000000100000010000001;
+uint_fast64_t board_mask = 1111111111111111111111111111111111111111111111111;
+
 /**
  * Creates a bitmask with a 1 in the top cell of a column.
  * @param col The column to place the 1 in, from 0 to BOARD_WIDTH - 1
@@ -33,6 +36,12 @@ uint_fast64_t bottom_mask(int col) {
 
 error:
     return 0;
+}
+
+uint_fast64_t column_mask(int col) {
+    check(0 <= col && col <= (BOARD_WIDTH - 1), "Column is invalid!");
+
+    return UINT64_C(1 << BOARD_HEIGHT) << (BOARD_HEIGHT + 1) * col;
 }
 
 /**
@@ -150,6 +159,14 @@ int play(int col, struct Position *pos) {
     return 0;
 }
 
+int play_move(uint_fast64_t move, struct Position *pos) {
+        pos->cur_pos ^= pos->mask;
+        pos->mask |= pos->move;
+        pos->moves++;
+
+        return 0;
+}
+
 /**
  * Checks if a column is playable on a given position.
  * @param col The 0-indexed column to check.
@@ -210,6 +227,106 @@ int check_win(uint_fast64_t cur_pos) {
     return 0;
 }
 
+/**
+ * Scores a move at a given position.
+ * @param move A bit board representing a possible position.
+ * @param pos The position to evaluate the move on.
+ * @return A score given by the number of winning positions a move creates.
+ */
+int score_move(uint_fast64_t move, struct Position *pos) {
+    uint_fast64_t m = pos->cur_pos | move;
+    return count(winning_positions(m, pos->mask));
+}
+
+/**
+ * Returns a mask of all the possible moves.
+ * @param pos The position to evaluate.
+ * @return A bit mask of all the possible moves (i.e. canPlay() == 1) in a position.
+ */
+int possible(struct Position *pos) {
+    return (pos->mask + bottom) & board_mask;
+}
+
+/**
+ * Returns a mask of all winning positions for the current player.
+ * @param pos The position to evaluate.
+ * @return A bit mask of all winning moves (i.e. will_win() == 1) in a position.
+ */
+int winning_positions(struct Position *pos) {
+    // vertical
+    uint_fast64_t v = (pos->cur_pos << 1) & (pos->cur_pos << 2) & (pos->cur_pos << 3);
+
+    //horizontal
+    uint_fast64_t h = (pos->cur_pos << (BOARD_HEIGHT + 1)) & (pos->cur_pos << 2*(BOARD_HEIGHT + 1));
+    v |= h & (pos->cur_pos << 3*(BOARD_HEIGHT + 1));
+    v |= h & (pos->cur_pos >> (BOARD_HEIGHT + 1));
+    h >>= 3*(BOARD_HEIGHT + 1);
+    v |= h & (pos->cur_pos << BOARD_HEIGHT);
+    v |= h & (pos->cur_pos >> 3*BOARD_HEIGHT);
+
+    //diagonal 1
+    h = (pos->cur_pos << BOARD_HEIGHT) & (pos->cur_pos << 2*BOARD_HEIGHT);
+    v |= h & (pos->cur_pos << 3*BOARD_HEIGHT);
+    v |= h & (pos->cur_pos >> BOARD_HEIGHT);
+    h >>= 3*BOARD_HEIGHT;
+    v |= h & (pos->cur_pos << BOARD_HEIGHT);
+    v |= h & (pos->cur_pos >> 3*BOARD_HEIGHT);
+
+    //diagonal 2
+    h = (pos->cur_pos << (BOARD_HEIGHT+2)) & (pos->cur_pos << 2*(BOARD_HEIGHT+2));
+    v |= h & (pos->cur_pos << 3*(BOARD_HEIGHT+2));
+    v |= h & (pos->cur_pos >> (BOARD_HEIGHT+2));
+    h >>= 3*(BOARD_HEIGHT+2);
+    v |= h & (pos->cur_pos << (BOARD_HEIGHT+2));
+    v |= h & (pos->cur_pos >> 3*(BOARD_HEIGHT+2));
+
+    return v & (board_mask ^ pos->mask);
+}
+
+/**
+ * Returns a mask of all winning positions for the opposing player.
+ * @param pos The position to evaluate.
+ * @return A bit mask of all moves that will result in a win for the opponent.
+ */
+uint_fast64_t opponent_winning_positions(struct Position *pos) {
+    return winning_positions(pos->cur_pos ^ pos->mask, pos->mask);
+}
+
+/**
+ * Returns a mask of all positions which do not result in a loss for the current player.
+ * @param pos The position to evaluate.
+ * @return A bit mask of all the moves that will not result in a win for the opponent.
+ */
+uint_fast64_t non_losing_positions(struct Position *pos) {
+    uint_fast64_t possible_mask = possible(pos);
+    uint_fast64_t opponent_win = opponent_winning_positions(pos);
+    uint_fast64_t forced_moves = possible_mask & opponent_win;
+
+    if (forced moves) {
+        if (forced_moves & (forced_moves - 1)) {
+            return 0;
+        } else {
+            possible_mask = forced_moves;
+        }
+    }
+
+    return possible_mask & ~(opponent_win >> 1);
+}
+
 int get_moves(struct Position *pos) {
     return pos->moves;
+}
+
+/**
+ * Counts the number of "on" bits in a 64-bit integer.
+ * @param n A 64-bit integer.
+ * @return The number of "on"/1 bits counted.
+ */
+unsigned int count(uint_fast64_t n) {
+    unsigned int c = 0;
+    for (c = 0; m; c++) {
+        m &= m-1;
+    }
+
+    return c;
 }
