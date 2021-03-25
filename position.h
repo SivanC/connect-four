@@ -46,6 +46,13 @@ int check_will_win(int column, position *pos);
  */
 int num_moves(position *pos);
 
+/*
+ * Generates the best order in which to check columns for good moves
+ * Example output with width of 7: [3, 2, 4, 1, 5, 0, 6]
+ * width: number of columns to arrange
+ */
+int * generate_column_order(int width);
+
 uint_fast64_t top_mask();
 uint_fast64_t bottom_mask();
 #endif

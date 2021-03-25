@@ -1,4 +1,6 @@
 #include <stdlib.h>
+#include <stdio.h>
+#include <math.h>
 #include "position.h"
 
 int playable(int column, position *pos) {
@@ -51,6 +53,19 @@ int get_moves(position *pos) {
 	}
 	
 	return count;
+}
+
+int * generate_column_order(int width) {
+	int order[width];
+	int *arr = order;
+		
+	int tracker = width/2;
+	int i;
+	for (i = 0; i < width; i++) {
+		*(arr + i) = tracker += i * pow(-1, i), tracker; 
+	}
+
+	return arr;
 }
 
 uint_fast64_t top_mask() {

@@ -2,36 +2,49 @@
 #include "position.h"
 #include "solver.h"
 
-int negamax(position *pos) {
+int negamax(position *pos, int alpha, int beta) {
 	if (num_moves(pos) == WIDTH * HEIGHT) {
 		return 0;
 	}
 
+	int *order = generate_column_order(WIDTH);
+
 	int i;
 	for (i = 0; i < WIDTH; i++) {
-		if (playable(i, pos) && check_will_win(i, pos)) {
+		if (playable(*(order + i), pos) && check_will_win(*(order + i), pos)) {
 			return (WIDTH + HEIGHT+1 - num_moves(pos)) / 2;
 		}
 	}
 
-	int max_score = -1 * (WIDTH * HEIGHT);
+	int max_score = (WIDTH * HEIGHT - 1 - num_moves(pos)) / 2;
+	if (beta > max_score) {
+		beta = max_score;
+		if (alpha >= beta) {
+			return beta;
+		}
+	}
 
 	for (i = 0; i < WIDTH; i++) {
-		if (playable(i, pos)) {
+		if (playable(*(order + i), pos)) {
 			position *t = malloc(sizeof(position));
 			t->pos = pos->pos;
 			t->mask = pos->mask;
 			t->height = HEIGHT;
 			t->width = WIDTH;
 
-			play(i, &t);
-			int score = -1 * negamax(t);
+			play(*(order + i), &t);
+			int score = -negamax(t, -beta, -alpha);
 
-			max_score = score > max_score ? score : max_score;
+			if (score >= beta) {
+				return score;
+			}
+			if (score > alpha) {
+				alpha = score;
+			}
 
 			free(t);
 		}
 	}
 
-	return max_score;
+	return alpha;
 }
