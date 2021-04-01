@@ -5,12 +5,13 @@
 
 #define WIDTH 7
 #define HEIGHT 6
+#define MIN -(WIDTH * HEIGHT) / 2 + 3
+#define MAX (WIDTH * HEIGHT) / 2 - 3
 
 typedef struct position {
 	uint_fast64_t pos; // width * (height + 1) size bit mask containing one player's moves
 	uint_fast64_t mask; // contains both players' moves, used with pos to get the position
-	int width;
-	int height;
+	uint_fast64_t key;
 } position;
 
 /*

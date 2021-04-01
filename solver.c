@@ -2,7 +2,7 @@
 #include "position.h"
 #include "solver.h"
 
-int negamax(position *pos, int alpha, int beta) {
+int negamax(position *pos, int alpha, int beta, entry **table) {
 	if (num_moves(pos) == WIDTH * HEIGHT) {
 		return 0;
 	}
@@ -17,6 +17,12 @@ int negamax(position *pos, int alpha, int beta) {
 	}
 
 	int max_score = (WIDTH * HEIGHT - 1 - num_moves(pos)) / 2;
+
+	int val = transtable_get(pos->key, *table);
+	if (val) {
+		max_score = val + MIN;
+	}
+
 	if (beta > max_score) {
 		beta = max_score;
 		if (alpha >= beta) {
@@ -46,5 +52,6 @@ int negamax(position *pos, int alpha, int beta) {
 		}
 	}
 
+	transtable_put(pos->key, alpha - MIN + 1, table);
 	return alpha;
 }
